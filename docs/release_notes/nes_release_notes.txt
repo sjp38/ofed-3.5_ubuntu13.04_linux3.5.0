@@ -1,0 +1,228 @@
+            Open Fabrics Enterprise Distribution (OFED)
+      NetEffect Ethernet Cluster Server Adapter Release Notes
+                           December 2012
+
+
+The iw_nes module and libnes user library provide RDMA and L2IF
+support for the NetEffect Ethernet Cluster Server Adapters.
+
+=============================================
+Supported Architectures and Operating Systems
+=============================================
+
+* CPU architectures:
+        - x86_64
+        - x86
+ 
+* Linux Operating Systems:
+	- RedHat EL6.2		2.6.32-220.el6
+	- RedHat EL6.3		2.6.32-279.el6
+	- SLES11 SP2		3.0.13-0.27-default
+	- kernel.org		3.5 (minimal QA for this version)
+
+==========
+What's New
+==========
+
+OFED 3.5 contains several important bug fixes for iw_nes driver:
+
+	- Removed an incorrect macro routine from the loopback code. 
+	- Fixed a couple of problems when unlinking skbs (interoperability with Chelsio).
+	- Added a lock, so that FPDUs are forwarded in order to iw_nes hardware (interoperability with Chelsio).
+	- Fixed an incorrect setting of a multicast address in the perfect filter table. 
+	- Fixed a problem when adding timer and a timer is already pending.
+	- Fixed a problem when initializing terminate timer more than once.
+	- Fixed a problem when establishing iWarp connection and tx checksum offload is disabled.
+	- Added backports for Linux 2.6 and 3.0 kernels
+	- iw_nes driver version is changed to 1.5.0.1   	 
+
+========================================
+Required Setting - Power Management Mode
+========================================
+If possible, disable Active State Power Management in the BIOS, e.g.:
+
+  PCIe ASPM L0s - Advanced State Power Management: DISABLED
+
+
+=======================
+Loadable Module Options
+=======================
+The following options can be used when loading the iw_nes module by modifying
+/etc/modprobe.conf.local file in the SLES hosts and /etc/modprobe.d/rnic.conf file in the RHEL hosts.
+
+wide_ppm_offset=0
+    Set to 1 will increase CX4 interface clock ppm offset to 300ppm.
+    Default setting 0 is 100ppm.
+
+mpa_version=1
+    MPA version to be used int MPA Req/Resp (1 or 2).
+
+disable_mpa_crc=0
+    Disable checking of MPA CRC.
+    Set to 1 to enable MPA CRC.
+
+send_first=0
+    Send RDMA Message First on Active Connection.
+
+nes_drv_opt=0x00000100
+    Following options are supported:
+
+    0x00000010 - Enable MSI
+    0x00000080 - No Inline Data
+    0x00000100 - Disable Interrupt Moderation
+    0x00000200 - Disable Virtual Work Queue
+    0x00001000 - Disable extra doorbell read after write
+
+debug_level=0
+    Specify debug output level.
+
+wqm_quanta=65536
+    Set size of data to be transmitted at a time.
+
+limit_maxrdreqsz=0
+    Limit PCI read request size to 256 bytes.
+
+nes_lro_max_aggr=64
+    Max number of LRO packets to be aggregated.
+
+===============
+Runtime Options
+===============
+The following options can be used to alter the behavior of the iw_nes module:
+NOTE: Assuming NetEffect Ethernet Cluster Server Adapter is assigned eth2.
+
+    ifconfig eth2 mtu 9000     		- largest mtu supported
+
+    ethtool -K eth2 tso on  		- enables TSO
+    ethtool -K eth2 tso off 		- disables TSO
+
+    ethtool -C eth2 rx-usecs-irq 128 	- set static interrupt moderation
+
+    ethtool -C eth2 adaptive-rx on      - enable dynamic interrupt moderation
+    ethtool -C eth2 adaptive-rx off     - disable dynamic interrupt moderation
+    ethtool -C eth2 rx-frames-low 16    - low watermark of rx queue for dynamic interrupt moderation
+    ethtool -C eth2 rx-frames-high 256  - high watermark of rx queue for dynamic interrupt moderation
+    ethtool -C eth2 rx-usecs-low 40     - smallest interrupt moderation timer for dynamic interrupt moderation
+    ethtool -C eth2 rx-usecs-high 1000  - largest interrupt moderation timer for dynamic interrupt moderation
+
+===================
+uDAPL Configuration
+===================
+Rest of the document assumes the following uDAPL settings in /etc/dat.conf:
+
+    ofa-v2-iwarp u2.0 nonthreadsafe default libdaplofa.so.2 dapl.2.0 "eth2 0" ""
+
+========================
+Chelsio Interoperability
+========================
+The firmware version supporting interoperability with Chelsio is 3.23 or greater.
+The load time Chelsio parameter peer2peer must be set to 1.
+
+==============
+mpd.hosts file
+==============
+mpd.hosts is a text file with a list of nodes, one per line, in the MPI ring.  
+Use either fully qualified hostname or IP address.
+
+===========================
+100% CPU Utilization remark
+===========================
+Most of the RDMA applications use CQ Polling mode to decrease latency.
+This operational mode can cause 100% CPU utilization.
+
+To switch to Event Driven mode and lower CPU utilization please refer to README or 
+Release Notes for specific application.
+
+========================================
+Recommended Settings for Intel MPI 4.0.x
+========================================
+Add the following to mpiexec command:
+
+    -genv I_MPI_FALLBACK_DEVICE 0
+    -genv I_MPI_DEVICE rdma:ofa-v2-iwarp
+
+Example mpiexec command line for uDAPL-2.0:
+
+    mpiexec -genv I_MPI_FALLBACK_DEVICE 0
+            -genv I_MPI_DEVICE rdma:ofa-v2-iwarp
+            -ppn 1 -n 2
+            /opt/intel/impi/4.0.3.008/bin64/IMB-MPI1
+
+Intel MPI use CQ Polling mode as a default.
+To switch to wait mode add the following to mpiexec command:
+     -genv I_MPI_WAIT_MODE 1
+
+NOTE: Wait mode supports the sock device only.
+
+========================================
+Recommended Setting for MVAPICH2 and OFA
+========================================
+From OFED-3.5 package MVAPICH2 is not a part of the OFED 
+
+Download mvapich2-1.8.1 package from following location:
+
+http://mvapich.cse.ohio-state.edu/download/mvapich2/
+
+Example mpirun_rsh command line:
+ 
+    mpirun_rsh -ssh -np 2 -hostfile /root/mpd.hosts
+            /usr/mpi/gcc/mvapich2-1.8.1/tests/osu_benchmarks-3.1.1/osu_latency
+ 
+MVAPICH2 use CQ Polling mode as a default.
+To switch to Blocking mode add the following to mpirun_rsh command:
+     MV2_USE_BLOCKING=1
+ 
+==========================================
+Recommended Setting for MVAPICH2 and uDAPL
+==========================================
+Add the following to the mpirun_rsh command for 64 or more processes:
+ 
+    -env MV2_ON_DEMAND_THRESHOLD <number of processes>
+ 
+Example mpirun_rsh command with uDAPL-2.0:
+ 
+    mpirun_rsh -ssh -np 64 -hostfile /root/mpd.hosts
+            MV2_DAPL_PROVIDER=ofa-v2-iwarp
+            MV2_ON_DEMAND_THRESHOLD=64
+            /usr/mpi/gcc/mvapich2-1.8.1/tests/IMB-3.2/IMB-MPI1
+ 
+MVAPICH2 use CQ Polling mode as a default.
+To switch to Blocking mode add the following to mpirun_rsh command:
+     MV2_USE_BLOCKING=1
+ 
+=======================================
+Recommended Settings for Open MPI 1.6.1
+=======================================
+
+From OFED-3.5 package OpenMPI is not a part of the OFED
+
+Download openmpi-1.6.1-1 package from following location:
+
+http://www.open-mpi.org/software/ompi/v1.6/ 
+
+There is more than one way to specify MCA parameters in
+Open MPI.  Please visit this link and use the best method
+for your environment:
+
+http://www.open-mpi.org/faq/?category=tuning#setting-mca-params
+
+Example mpirun command line:
+
+    mpirun -np 2 -hostfile /opt/mpd.hosts
+           -mca btl openib,self,sm
+           -mca btl_mpi_leave_pinned 0
+           /usr/mpi/gcc/openmpi-1.6.1/tests/IMB-3.2/IMB-MPI1
+ 
+OpenMPI use CQ Polling mode as a default.
+No command parameter available to switch to Event Driven mode.
+
+
+==================================
+Intel Multicast Acceleration (IMA) 
+==================================
+
+OFED-3.5 doesn't support Intel Multicast Acceleration (IMA) functionality.
+
+
+NetEffect is a trademark of Intel Corporation in the U.S. and other countries.
+

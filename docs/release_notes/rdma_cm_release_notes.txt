@@ -1,0 +1,133 @@
+	     Open Fabrics Enterprise Distribution (OFED)
+		    RDMA CM in OFED 1.5 Release Notes
+			  
+			   July 2010
+
+
+===============================================================================
+Table of Contents
+===============================================================================
+1. Overview
+2. New Features
+3. Known Issues
+
+===============================================================================
+1. Overview
+===============================================================================
+The RDMA CM is a communication manager used to setup reliable, connected
+and unreliable datagram data transfers.  It provides an RDMA transport
+neutral interface for establishing connections.  The API is based on sockets,
+but adapted for queue pair (QP) based semantics: communication must be
+over a specific RDMA device, and data transfers are message based.
+
+
+The RDMA CM only provides the communication management (connection setup /
+teardown) portion of an RDMA API.  It works in conjunction with the verbs
+API for data transfers.
+
+===============================================================================
+2. New Features
+===============================================================================
+for OFED 1.5.2:
+
+Several enhancements were added to librdmacm release 1.0.12 that
+are intended to simplify using RDMA devices and address scalability issues.
+These changes were in response to long standing requests to make
+connection establishment 'more like sockets'.  For full details,
+users should refer to the appropriate man pages.  Major changes include:
+
+* Support synchronous operation for library calls.  Users can control
+  whether an rdma_cm_id operates asynchronously or synchronously based on
+  the rdma_event_channel parameter.  Use of synchronous operations
+  reduces the amount of application code required to use the librdmacm
+  by eliminating the need for event processing code.
+
+  An rdma_cm_id will be marked for synchronous operation if the
+  rdma_event_channel parameter is NULL for rdma_create_id or
+  rdma_migrate_id.  Users can toggle between synchronous and
+  asynchronous operation through the rdma_migrate_id call.
+
+  Calls that operate synchronously include rdma_resolve_addr,
+  rdma_resolve_route, rdma_connect, rdma_accept, and rdma_get_request.
+  Synchronous event data is returned to the user through the
+  rdma_cm_id.
+
+* The addition of a new API: rdma_getaddrinfo.  This call is modeled
+  after getaddrinfo, but for RDMA devices and connections.  It has the
+  following notable deviations from getaddrinfo:
+
+  A source address is returned as part of the call to allow the
+  user to allocate necessary local HW resources for connections.
+
+  Optional routing information may be returned to support
+  Infiniband fabrics.  IB routing information includes necessary
+  path record data.  rdma_getaddrinfo will obtain this information
+  if IB ACM support (see below) is enabled.  The use of IB ACM
+  is not required for rdma_getaddrinfo.
+
+  rdma_getaddrinfo provides future extensions to support
+  more complex address and route resolution mechanisms, such as
+  multiple path support and failover.
+
+* Support for a new APIs: rdma_get_request, rdma_create_ep, and
+  rdma_destroy_ep.  rdma_get_request simplifies the passive side
+  implementation by adding synchronous support for accepting new
+  connections.  rdma_create_ep combines the functionality of
+  rdma_create_id, rdma_create_qp, rdma_resolve_addr, and rdma_resolve_route
+  in a single API that uses the output of rdma_getaddrinfo as its input.
+  
+* Support for optional parameters.  To simplify support for casual RDMA
+  developers and researchers, the librdmacm can allocate protection
+  domains, completion queues, and queue pairs on a user's behalf.
+  This simplifies the amount of information that a developer
+  must learn in order to use RDMA, plus allows the user to take
+  advantage of higher-level completion processing abstractions.
+
+  In addition to optional parameters, a user can also specify that the
+  librdmacm should automatically select usable values for RDMA read
+  operations.
+
+* Add support for IB ACM.  IB ACM (InfiniBand Assistant for Communication
+  Management) defines a socket based protocol to an IB address and route
+  resolution service.  One implementation of that service is provided
+  separately by the ibacm package, but anyone can implement the service
+  provided that they adhere to the IB ACM socket protocol.  IB ACM is an
+  experimental service targeted at increasing the scalability of applications
+  running on a large cluster.
+  
+  Use of IB ACM is not required and is controlled through the build option
+  '--with-ib_acm'.  If the librdmacm fails to contact the IB ACM service, it
+  reverts to using kernel services to resolve address and routing data.
+
+* Add RDMA helper routines.  The librdmacm provide a set of simpler verbs
+  calls for posting work requests, registering memory, and checking for
+  completions.  These calls are wrappers around libibverbs routines.
+
+===============================================================================
+3. Known Issues
+===============================================================================
+The RDMA CM relies on the operating system's network configuration tables to
+map IP addresses to RDMA devices.  Incorrectly configured network
+configurations can result in the RDMA CM being unable to locate the correct
+RDMA device.  Currently, the RDMA CM only supports IPv4 addressing.
+
+All RDMA interfaces must provide a way to map IP addresses to an RDMA device.
+For Infiniband, this is done using IPoIB, and requires correctly configured
+IPoIB device interfaces sharing the same multicast domain.  For details on
+configuring IPoIB, refer to ipoib_release_notes.txt.  For RDMA devices to
+communicate, they must support the same underlying network and data link
+layers.
+
+If you experience problems using the RDMA CM, you may want to check the
+following:
+
+   * Verify that you have IP connectivity over the RDMA devices.  For example,
+     ping between iWarp or IPoIB devices.
+
+   * Ensure that IP network addresses assigned to RDMA devices do not
+     overlap with IP network addresses assigned to standard Ethernet devices.
+
+   * For multicast issues, either bind directly to a specific RDMA device, or
+     configure the IP routing tables to route multicast traffic over an RDMA
+     device's IP address.
+

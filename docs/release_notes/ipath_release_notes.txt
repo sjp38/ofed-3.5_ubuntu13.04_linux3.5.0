@@ -1,0 +1,13 @@
+	      Open Fabrics Enterprise Distribution (OFED)
+		  ipath in OFED 1.5 Release Notes
+
+			     December 2009
+
+======================================================================
+1. Overview
+======================================================================
+ipath is the low level driver implementation for the
+QLogic HyperTransport HCA only (model QHT7140).
+
+The qib driver is the currently supported driver for all
+PCI-Express based Infiniband HCAs.

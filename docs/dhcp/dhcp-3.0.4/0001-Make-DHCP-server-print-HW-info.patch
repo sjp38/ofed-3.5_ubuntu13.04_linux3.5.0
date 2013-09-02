@@ -1,0 +1,58 @@
+From 37cb19b5b3da9a8c3f61eeb3c4fa5885c70a4375 Mon Sep 17 00:00:00 2001
+From: Eli Cohen <eli@mellanox.co.il>
+Date: Tue, 23 Jun 2009 10:11:55 +0300
+Subject: [PATCH] Make DHCP server print HW info
+
+When the DHCP server gets a request, it prints to the log file the HW address
+which sent the request. Since for IPoIB the HW address is not conveyed on
+messages, this patch will put the client identifer in the HW address. This is
+fine since we put the HW address in the client identifier.
+
+Signed-off-by: Eli Cohen <eli@mellanox.co.il>
+---
+ common/discover.c |    4 ++--
+ server/dhcp.c     |   12 ++++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/common/discover.c b/common/discover.c
+index b0387d0..c4f7200 100644
+--- a/common/discover.c
++++ b/common/discover.c
+@@ -533,9 +533,9 @@ void discover_interfaces (state)
+ #endif
+ 
+ 		      case ARPHRD_INFINIBAND:
+-			tmp -> hw_address.hlen = 1;
++			tmp -> hw_address.hlen = 16;
+ 			tmp -> hw_address.hbuf [0] = ARPHRD_INFINIBAND;
+-			memcpy (&tmp -> hw_address.hbuf [1], sa.sa_data, 20);
++			memcpy (&tmp -> hw_address.hbuf [1], sa.sa_data, 16);
+ 		        break;
+ 
+ 		      default:
+diff --git a/server/dhcp.c b/server/dhcp.c
+index 1c90a6c..b558cfb 100644
+--- a/server/dhcp.c
++++ b/server/dhcp.c
+@@ -262,6 +262,18 @@ void dhcpdiscover (packet, ms_nulltp)
+ #if defined (FAILOVER_PROTOCOL)
+ 	dhcp_failover_state_t *peer;
+ #endif
++	struct option_cache *oc;
++
++	if (packet->raw->htype == ARPHRD_INFINIBAND) {
++		oc = lookup_option (&dhcp_universe, packet->options, DHO_DHCP_CLIENT_IDENTIFIER);
++		if (oc) {
++			int len;
++
++			len = oc->data.len > 16 ? 16 : oc->data.len;
++			packet->raw->hlen = len;
++			memcpy(packet->raw->chaddr, oc->data.data, len);
++		}
++	}
+ 
+ 	find_lease (&lease, packet, packet -> shared_network,
+ 		    0, &peer_has_leases, (struct lease *)0, MDL);
+-- 
+1.6.3.2
+

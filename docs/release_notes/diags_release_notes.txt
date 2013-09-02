@@ -1,0 +1,89 @@
+	     Open Fabrics Enterprise Distribution (OFED)
+             Diagnostic Tools in OFED 1.5 Release Notes
+			  
+			   December 2009
+
+
+Repo: git://git.openfabrics.org/~sashak/management/management.git
+URL:  http://www.openfabrics.org/downloads/management
+
+
+General
+-------
+Model of operation: All diag utilities use direct MAD access to perform their
+operations. Operations that require QP0 mads only may use direct routed
+mads, and therefore can work even in unconfigured subnets. Almost all
+utilities can operate without accessing the SM, unless GUID to lid translation
+is required. The only exception to this is saquery which requires the SM.
+
+
+Dependencies
+------------
+Most diag utilities depend on libibmad and libibumad.
+All diag utilities depend on the ib_umad kernel module.
+
+
+Multiple port/Multiple CA support
+---------------------------------
+When no IB device or port is specified (see the "local umad parameters" below),
+the libibumad library selects the port to use by the following criteria:
+1. the first port that is ACTIVE.
+2. if not found, the first port that is UP (physical link up).
+
+If a port and/or CA name is specified, the libibumad library attempts to 
+satisfy the user request, and will fail if it cannot do so.
+
+For example:
+	ibaddr 			# use the 'best port'
+	ibaddr -C mthca1	# pick the best port from mthca1 only.
+	ibaddr -P 2		# use the second (active/up) port from the
+				  first available IB device.
+	ibaddr -C mthca0 -P 2	# use the specified port only.
+
+
+Common options & flags
+----------------------
+Most diagnostics take the following flags. The exact list of supported
+flags per utility can be found in the usage message and can be displayed
+using util_name -h syntax.
+
+# Debugging flags
+	-d	raise the IB debugging level. May be used
+		several times (-ddd or -d -d -d).
+	-e	show umad send receive errors (timeouts and others)
+	-h	display the usage message
+	-v	increase the application verbosity level.
+		May be used several times (-vv or -v -v -v)
+	-V	display the internal version info.
+
+# Addressing flags
+	-D	use directed path address arguments. The path
+		is a comma separated list of out ports.
+		Examples:
+		"0" 		# self port
+		"0,1,2,1,4"	# out via port 1, then 2, ...
+	-G	use GUID address arguments. In most cases, it is the Port GUID.
+		Examples:
+		"0x08f1040023"
+	-s <smlid>	use 'smlid' as the target lid for SA queries.
+
+# Local umad parameters:
+	-C <ca_name>	use the specified ca_name.
+	-P <ca_port>	use the specified ca_port.
+	-t <timeout_ms>	override the default timeout for the solicited mads.
+
+
+CLI notation
+------------
+All utilities use the POSIX style notation, meaning that all options (flags)
+must precede all arguments (parameters).
+
+
+Utilities descriptions
+----------------------
+See man pages
+
+
+Bugs Fixed
+----------
+

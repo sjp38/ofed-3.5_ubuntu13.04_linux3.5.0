@@ -1,0 +1,246 @@
+	    Open Fabrics Enterprise Distribution (OFED)
+	               Version 3.5
+	               Release Notes
+	               February 2013
+
+
+===============================================================================
+Table of Contents
+===============================================================================
+1. Overview, which includes:
+	- OFED Distribution Rev 3.5 Contents
+	- Supported Platforms and Operating Systems
+	- Supported HCA and RNIC Adapter Cards and Firmware Versions
+	- Tested Switch Platforms
+	- Third party Test Packages
+	- OFED sources
+2. Change log
+3. Known Issues
+
+
+===============================================================================
+1. Overview
+===============================================================================
+These are the release notes of OpenFabrics Enterprise Distribution (OFED)
+release 3.5. The OFED software package is composed of several software modules,
+and is intended for use on a computer cluster constructed as an InfiniBand
+Fabric, an iWARP Network or a RoCE Fabric.
+
+Note: If you plan to upgrade the OFED package on your cluster, please upgrade
+all of its nodes to this new version.
+
+
+1.1 OFED 3.5 Contents
+-----------------------
+The OFED package contains the following components:
+ - OpenFabrics core and ULPs:
+	- IB HCA drivers (mthca, mlx4, qib, ehca)
+	- iWARP RNIC driver (cxgb3, cxgb4, nes)
+	- RoCE drivers (mlx4)
+- ib core
+	- Upper Layer Protocols: IPoIB, SRP Initiator and target, iSER
+	  Initiator and target, RDS, uDAPL, qlgc_vnic and NFS-RDMA*.
+ - OpenFabrics utilities:
+	- OpenSM (OSM): InfiniBand Subnet Manager
+	- Diagnostic tools
+	- Performance tests
+ - Extra packages:
+	- infinipath-psm: Performance-Scaled Messaging API, an accelerated
+	  interface to Intel(R) HCAs
+ - Sources of all software modules (under conditions mentioned in the modules'
+   LICENSE files)
+ - Documentation
+
+
+1.2 Supported Platforms and Operating Systems
+---------------------------------------------
+  o   CPU architectures:
+	- x86_64
+	- x86
+	- ppc64
+
+  o   Linux Operating Systems:
+	- RedHat EL6.2 		2.6.32-220.el6
+	- RedHat EL6.3 		2.6.32-279.el6
+	- SLES11 SP2 		3.0.13-0.27-default
+	- kernel.org		3.5    *
+
+      * Minimal QA for these versions.
+
+1.3 HCAs and RNICs Supported
+----------------------------
+This release supports IB HCAs by IBM, Intel and Mellanox Technologies, iWARP RNICs by Chelsio Communications and Intel and RoCE adapters by IBM and Mellanox.
+
+InfiniBand Adapters
+  o   IBM HCAs:
+	- GX Dual-port SDR 4x IB HCA
+	- GX Dual-port SDR 12x IB HCA
+	- GX Dual-port DDR 4x IB HCA
+	- GX Dual-port DDR 12x IB HCA
+
+  o   Intel (formerly QLogic) HCAs:
+	- Intel(R) True Scale DDR PCIe x8 and x16 HCAs
+	- Intel(R) True Scale QDR PCIe x8 Gen2 HCAs
+
+  o   Mellanox Technologies HCAs (SDR, DDR and QDR Modes are Supported):
+- ConnectX(R) and ConnectX EN (fw-25408 Rev 2.9.1000)
+	- ConnectX-2 (fw-ConnectX2 Rev 2.9.1000)
+	- ConnectX-3 (fw-ConnectX3 Rev 2.11.0500) (FDR and FDR10 Modes are Supported)
+
+	For official firmware versions please see:
+	http://www.mellanox.com/content/pages.php?pg=firmware_download
+
+iWARP Adapters
+  o   Chelsio RNICs:
+	- S310/S320 10GbE Storage Accelerators
+	- R310/R320 10GbE iWARP Adapters
+- T4 Based Adapters with the exception of the T420-SO-CR
+
+  o   Intel RNICs:
+	- NE020 10Gb iWARP Adapter
+
+
+RoCE Adapters
+ o   IBM
+- IBM Flex System EN4132 2-port 10 GbE RoCE
+- IBM EL27 PCIe LP 2-Port 10GbE RoCE SFP+ adapter
+- IBM EC28 PCIe 2-Port 10GbE RoCE SFP+ adapter
+
+  o   Mellanox
+- ConnectX-2 EN (fw-ConnectX2 Rev 2.9.1200)
+	- ConnectX-3 EN (fw-ConnectX3 Rev 2.11.0500)
+
+1.4 Switches Supported
+----------------------
+This release was tested with switches and gateways provided by the following
+companies:
+InfiniBand Switches
+  o   Flextronics
+	- F-X430044
+  o   Intel (formerly QLogic)
+- 12200
+  o   Mellanox
+- IS-5030
+- SX6025
+- SX6036
+
+iWARP Switches
+  o   Fujitisu
+- XG2000C 10Gb Ethernet Switch
+
+RoCE Switches
+  o   Arista
+  o   BLADE Network Technologies (BNT)
+  o   Mellanox
+- SX1036
+- SX1024
+- SX1016
+
+1.5 Third Party Packages
+------------------------
+The following third party packages have been tested with OFED 3.5:
+- MVAPICH2 - 1.8
+- Intel MPI - 4.1
+- Open MPI - 1.6/1.6.1
+
+1.6 OFED Sources
+----------------
+All sources are located under git://git.openfabrics.org/
+
+Linux:
+------
+URL: git://git.openfabrics.org/compat-rdma/linux-3.5.git
+Branch: for-ofed-3.5
+
+- Linux kernel sub-tree that includes files relevant for the OFED project only.
+  Based on v3.5. Used to shorten git clone time.
+  Note: the regular Linux git tree can be used as well.
+
+compat:
+-------
+URL: git://git.openfabrics.org/compat-rdma/compat.git
+Branch: ofed
+
+- Based on compat project (https://github.com/mcgrof/compat). The compat module
+  provides functionality introduced in newer kernels to older kernels through a
+  set of header files and exported symbols.
+  See https://github.com/mcgrof/compat/wiki for details.
+- Used to replace kernel_addons in the previous OFED kernel tree.
+
+compat-rdma:
+------------
+URL: git://git.openfabrics.org/compat-rdma/compat-rdma.git
+Branch: master
+
+User level Sources are downloaded from http://www.openfabrics.org/downloads/
+as written in the BUILD_ID
+
+The kernel sources are based on Linux 3.5 mainline kernel. Its patches
+are included in the OFED sources directory.
+For details see HOWTO.build_ofed.
+
+The list of maintainers is available under:
+http://www.openfabrics.org/downloads/MAINTAINERS
+
+===============================================================================
+2. Change log
+===============================================================================
+
+OFED-3.5 Main Changes from OFED 1.5.4.1 and 1.5.4
+-------------------------------------------------------------------------------
+1. Based on linux-3.5 kernel
+2. kernel-ib RPM renamed to compat-rdma
+3. Removed MPI packages and tests
+4. Removed SDP kernel module and libsdp, sdpnetstat
+5. XRC is supported in kernel only
+
+6. Removed support for the OSes:
+   - RHEL 5.X
+   - SLES 10 SPx
+7. Updated packages:
+   - libibverbs-1.1.6
+   - librdmacm-1.0.16
+   - ibacm-1.0.7
+   - dapl-2.0.36
+   - opensm-3.3.15
+   - infiniband-diags-1.6.1
+   - libibmad-1.3.9
+   - libibumad-1.3.8
+   - infinipath-psm-3.1-364.1140_open
+   - libmlx4-1.0.4
+   - mstflint-1.4-1.23.g5c2032a
+   - perftest-2.0-0.27.g2edd80a
+   - qperf-0.4.9
+
+
+===============================================================================
+3. Known Issues
+===============================================================================
+The following is a list of general limitations and known issues of the various
+components of the OFED 3.5-rc2 release.
+
+1. When upgrading from an earlier OFED version, the installation script does
+   not stop the earlier OFED version prior to uninstalling it.
+   Workaround: Stop the old OFED stack (/etc/init.d/openibd stop) before
+   upgrading to OFED 3.5 or reboot the server after OFED installation.
+2. Memory registration by the user is limited according to administrator
+   setting. See "Pinning (Locking) User Memory Pages" in OFED_tips.txt for
+   system configuration.
+3. Fork support from kernel 2.6.12 and above is available provided
+   that applications do not use threads. fork() is supported as long as the
+   parent process does not run before the child exits or calls exec().
+   The former can be achieved by calling wait(childpid), and the latter can be
+   achieved by application specific means.  The Posix system() call is
+   supported.
+4. The qib driver is supported only on 64-bit platforms.
+5. IPoIB: brctl utilities do not work on IPoIB interfaces. The reason for that
+   is that these utilities support devices of type Ethernet only.
+6. In case uninstall is failing, check the error log and remove
+   the remaining RPMs manually using 'rpm -e <rpms list>'.
+7. On SLES11.x, set allow_unsupported_modules parameter to 1 in file:
+    /etc/modprobe.d/unsupported-modules. Without this the modules will not
+    load.
+8. RDS is supported only on kernel.org 3.5 and not on any distro OS.
+
+Note: See the release notes of each component for additional issues.
+

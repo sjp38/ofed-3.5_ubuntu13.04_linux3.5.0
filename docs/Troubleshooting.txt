@@ -1,0 +1,37 @@
+================================================================================
+MPI compilation fails with PGI compiler:
+PGC-F-0249-#error -- "Never use <bits/byteswap.h> directly; include <byteswap.h> instead." (/opt/pgi/linux86/8.0-1/include/bits/byteswap.h: 21) 
+================================================================================
+
+The issue caused by the system "endian.h" file that directly include "bits/byteswap.h".
+This means in PGI version of "bits/byteswap.h, "endian.h" needs to be added to the list
+of header files that are allowed to call it directly. So by changing line 20 of
+"/opt/pgi/linux86/8.0-1/include/bits/byteswap.h" from:
+Code:
+#if !defined _BYTESWAP_H && !defined _NETINET_IN_H
+# error "Never use <bits/byteswap.h> directly; include <byteswap.h> instead."
+#endif
+to
+Code:
+#if !defined _BYTESWAP_H && !defined _NETINET_IN_H && !defined  _ENDIAN_H
+# error "Never use <bits/byteswap.h> directly; include <byteswap.h> instead."
+#endif
+you can work around the problem.
+
+================================================================================
+ofa_kernel compilation fails on PPC64 with kernel >= 2.6.28
+================================================================================
+
+Compilation Error:
+In file included from /var/tmp/OFED_topdir/BUILD/ofa_kernel-1.5.2/drivers/net/mlx4/main.c:41:
+include/linux/io-mapping.h:24:23: error: asm/iomap.h: No such file or directory
+make[3]: *** [/var/tmp/OFED_topdir/BUILD/ofa_kernel-1.5.2/drivers/net/mlx4/main.o] Error 1
+make[2]: *** [/var/tmp/OFED_topdir/BUILD/ofa_kernel-1.5.2/drivers/net/mlx4] Error 2
+make[1]: *** [_module_/var/tmp/OFED_topdir/BUILD/ofa_kernel-1.5.2] Error 2
+make[1]: Leaving directory `/usr/src/kernels/2.6.32-71.el6.ppc64'
+make: *** [kernel] Error 2
+
+Workaround:
+$ touch /lib/modules/`uname -r`/build/arch/powerpc/include/asm/iomap.h
+
+Then, rerun OFED installation

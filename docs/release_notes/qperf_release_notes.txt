@@ -1,0 +1,79 @@
+Distribution
+    Open Fabrics Enterprise Distribution (OFED) 1.5, December 2009
+
+Summary
+    qperf - Measure RDMA and IP performance
+
+Overview
+    qperf measures bandwidth and latency between two nodes.  It can work over
+    TCP/IP as well as the RDMA transports.
+
+Quick Start
+    * Since qperf measures latency and bandwidth between two nodes, you need
+      access to two nodes.  Assume they are called node1 and node2.
+
+    * On node1, run qperf without any arguments.  It will act as a server and
+      continue to run until asked to quit.
+
+    * To measure TCP bandwidth between the two nodes, on node2, type:
+        qperf node1 tcp_bw
+
+    * To measure RDMA RC latency, type (on node2):
+        qperf node1 rc_lat
+
+    * To measure RDMA UD latency using polling, type (on node2):
+        qperf node1 -P 1 ud_lat
+
+    * To measure SDP bandwidth, on node2, type:
+        qperf node1 sdp_bw
+
+Documentation
+    * Man page available.  Type
+        man qperf
+
+    * To get a list of examples, type:
+        qperf --help examples
+
+    * To get a list of tests, type:
+        qperf --help tests
+
+Tests
+    Miscellaneous
+        conf                    Show configuration
+        quit                    Cause the server to quit
+    Socket Based
+        rds_bw                  RDS streaming one way bandwidth
+        rds_lat                 RDS one way latency
+        sctp_bw                 SCTP streaming one way bandwidth
+        sctp_lat                SCTP one way latency
+        sdp_bw                  SDP streaming one way bandwidth
+        sdp_lat                 SDP one way latency
+        tcp_bw                  TCP streaming one way bandwidth
+        tcp_lat                 TCP one way latency
+        udp_bw                  UDP streaming one way bandwidth
+        udp_lat                 UDP one way latency
+    RDMA Send/Receive
+        ud_bw                   UD streaming one way bandwidth
+        ud_bi_bw                UD streaming two way bandwidth
+        ud_lat                  UD one way latency
+        rc_bw                   RC streaming one way bandwidth
+        rc_bi_bw                RC streaming two way bandwidth
+        rc_lat                  RC one way latency
+        uc_bw                   UC streaming one way bandwidth
+        uc_bi_bw                UC streaming two way bandwidth
+        uc_lat                  UC one way latency
+    RDMA
+        rc_rdma_read_bw         RC RDMA read streaming one way bandwidth
+        rc_rdma_read_lat        RC RDMA read one way latency
+        rc_rdma_write_bw        RC RDMA write streaming one way bandwidth
+        rc_rdma_write_lat       RC RDMA write one way latency
+        rc_rdma_write_poll_lat  RC RDMA write one way polling latency
+        uc_rdma_write_bw        UC RDMA write streaming one way bandwidth
+        uc_rdma_write_lat       UC RDMA write one way latency
+        uc_rdma_write_poll_lat  UC RDMA write one way polling latency
+    InfiniBand Atomics
+        rc_compare_swap_mr      RC compare and swap messaging rate
+        rc_fetch_add_mr         RC fetch and add messaging rate
+    Verification
+        ver_rc_compare_swap     Verify RC compare and swap
+        ver_rc_fetch_add        Verify RC fetch and add

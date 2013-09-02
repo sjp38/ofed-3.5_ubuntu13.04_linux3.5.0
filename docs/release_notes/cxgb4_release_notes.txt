@@ -1,0 +1,294 @@
+            Open Fabrics Enterprise Distribution (OFED)
+                CHELSIO T4 RNIC RELEASE NOTES
+			December 2012
+
+
+The iw_cxgb4 and cxgb4 modules provide RDMA and NIC support for the
+Chelsio T4 series adapters.  Make sure you choose the 'cxgb4' and
+'libcxgb4' options when generating your OFED rpms.
+
+============================================
+New for OFED-3.5
+============================================
+- Added T4 firmware configuration file support
+- Added new T4 firmware 1.6.2.0 support.
+- Important bug fixes
+
+============================================
+New for OFED-1.5.4
+============================================
+
+- Added Chelsio T4 iWARP driver and library.
+
+==========================
+Supported Operating System
+==========================
+
+  o   CPU architectures:
+        - x86_64
+        - x86
+
+  o   Linux Operating Systems:
+	- RedHat EL6.2		2.6.32-220.el6
+	- RedHat EL6.3		2.6.32-279.el6.x86_64
+	- SLES11 SP2		3.0.13-0.27-default
+	- kernel.org		3.5    *
+
+      * Minimal QA for these versions
+
+===============
+Supported Cards
+================
+
+- T420-CR 
+- T440-CR
+- T404-BT
+- T422-CR
+
+=================
+Updating Firmware
+=================
+This driver requires released firmware for T4 card. This driver has been tested
+with t4fw-1.6.2.0 and later firmware. This firmware is available at
+service.chelsio.com inside the driver package.
+
+If your distro/kernel cxgb4 driver supports firmware loading, you can place
+the chelsio firmware image in /lib/firmware/cxgb4, then rename it as t4fw.bin
+and unload and reload the cxgb4 module to get the new images loaded. If this
+does not work, then you can load the firmware images manually as follows:
+
+Obtain the cxgbtool tool from service.chelsio.com. This tool is available
+inside driver package.
+
+To build cxgbtool:
+
+# cd <path-to-cxgbtool>
+# make && make install
+
+Then build and load the released cxgb4 driver available at service.chelsio.com.
+
+# cd <path-to-driver-package>
+# make && make install
+# modprobe cxgb4
+
+Now note the ethernet interface name for the T4 device.  This can be
+done by typing 'ifconfig -a' and noting the interface name for the
+interface with a HW address that begins with "00:07:43".
+
+# cxgbtool <interface name> loadfw <firmware_file>
+# reboot
+
+NOTE: Driver package on the service.chelsio.com is getting updated
+periodically. Along with driver package T4 firmware will also get updated.
+It is recommended to use latest available firmware at service.chelsio.com.
+This driver should work with latest available firmware. In case of any issue
+please contact Chelsio support at support@chelsio.com.
+
+==============================
+Setting shell for Remote Login
+==============================
+User needs to set up authentication on the user account on all systems in the
+cluster to allow user to remotely logon or executing commands without
+password.
+
+Quick steps to set up user authentication:
+- Change to user home directory
+# cd
+- Generate authentication key
+# ssh-keygen -t rsa
+- Press enter upon prompting to accept default setup
+and empty password phrase.
+- Create authorization file
+# cd .ssh
+# cat *.pub > authorized_keys
+# chmod 600 authorized_keys
+- Copy directory .ssh to all systems in the cluster
+# cd
+# scp -r .ssh remotehostname-or-ipaddress:
+
+======================
+Enabling MPA version 2
+======================
+We can enable MPA version 2 by setting iw_cxgb4 module parameter as shown below
+# modprobe iw_cxgb4 mpa_rev=2
+
+MPA v2 is an enahanced RDMA connection establishment. More details are available at
+http://tools.ietf.org/html/draft-ietf-storm-mpa-peer-connect-08 location.
+
+============================================
+Enabling Intel and Platform MPI
+============================================
+
+For Intel MPI and Platform MPI: you must set the iw_cxgb4
+module option peer2peer=1 on all systems.  This can be done by writing
+to the /sys/module file system during boot.  EG:
+
+# echo 1 > /sys/module/iw_cxgb4/parameters/peer2peer
+
+Or you can add the following line to /etc/modprobe.conf to set the option
+at module load time:
+
+options iw_cxgb4 peer2peer=1
+
+For Intel MPI and Platform MPI: Enable the chelsio device by adding
+an entry to /etc/dat.conf for the chelsio interface.  For instance,
+if your chelsio interface name is eth2, then the following line adds
+a DAT version 1.2 and 2.0 devices named "chelsio" and "chelsio2" for
+that interface:
+
+chelsio u1.2 nonthreadsafe default libdaplcma.so.1 dapl.1.2 "eth2 0" ""
+chelsio2 u2.0 nonthreadsafe default libdaplofa.so.2 dapl.2.0 "eth2 0" ""
+
+=============
+Intel MPI:
+=============
+Download latest Intel MPI from the Intel website
+
+Copy COM_L___CF8J-98P6MBWL.lic into l_mpi_p_x.y.z directory
+
+Create machines.LINUX (list of node names) in l_mpi_p_x.y.z
+
+Install software on every node.
+#./install.sh
+
+Register and set IntelMPI with mpi-selector (do this on all nodes).
+#mpi-selector --register intelmpi --source-dir /opt/intel/impi/3.1/bin/
+#mpi-selector --set intelmpi
+
+Edit .bashrc and add these lines:
+
+export RSH=ssh
+export DAPL_MAX_INLINE=64
+export I_MPI_DEVICE=rdssm:chelsio
+export MPIEXEC_TIMEOUT=180
+export MPI_BIT_MODE=64
+
+Logout & log back in.
+
+Populate mpd.hosts with node names.
+Note: The hosts in this file should be Chelsio interface IP addresses. 
+
+NOTE: I_MPI_DEVICE=rdssm:chelsio assumes you have an entry in
+/etc/dat.conf named "chelsio".
+
+NOTE: MPIEXEC_TIMEOUT value might be required to increase if heavy traffic 
+is going across the systems.
+
+Contact Intel for obtaining their MPI with DAPL support.
+
+To run Intel MPI applications:
+
+#mpdboot -n <num nodes> -r ssh --ncpus=<num cpus>
+#mpiexec -ppn <process per node> -n <num nodes> <MPI Application Path>
+
+=============
+OpenMPI:
+=============
+From OFED-3.5 package onwards OpenMPI is not a part of the OFED package. User
+has to manually download and install it.
+
+- Download latest OpenMPI released SRPM from following location.
+http://www.open-mpi.org/software/ompi
+
+- To install OpenMPI on your setup refer to the following guidelines
+http://www.open-mpi.org/software/ompi/v1.6/srpm.php
+
+OpenMPI iWARP support is only available in OpenMPI version 1.3 or greater.
+
+Open MPI will work without any specific configuration via the openib btl.
+Users wishing to performance tune the configurable options may wish to
+inspect the receive queue values.  Those can be found in the "Chelsio T4"
+section of mca-btl-openib-hca-params.ini.
+
+To run OpenMPI applications:
+
+ mpirun --host <node1>,<node2> -mca btl openib,sm,self <OpenMPI Application Path>
+
+=============
+MVAPICH2:
+=============
+From OFED-3.5 package onwards MVAPICH2 is not a part of the OFED package. User
+has to manually download and install it.
+
+- Download latest MVAPICH2 released SRPM from following location.
+http://mvapich.cse.ohio-state.edu/download/mvapich2/
+
+- To install MVAPICH2 on your setup do the following
+./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64 && make &&
+make install
+
+The following env vars enable MVAPICH2 version 1.4-2.  Place these
+in your user env after installing and setting up MVAPICH2 MPI:
+
+export MVAPICH2_HOME=/usr/mpi/gcc/mvapich2-1.4/
+export MV2_USE_IWARP_MODE=1
+export MV2_USE_RDMA_CM=1
+
+On each node, add this to the end of /etc/profile.
+
+ ulimit -l 999999
+
+On each node, add this to the end of /etc/init.d/sshd and restart sshd.
+
+ ulimit -l 999999
+ % service sshd restart
+
+Verify the ulimit changes worked. These should show '999999':
+
+ % ulimit -l
+ % ssh <peer> ulimit -l
+
+Note: You may have to restart sshd a few times to get it to work.
+
+Create mpd.hosts with list of hostname or ipaddrs in the cluster. They
+should be names/addresses that you can ssh to without passwords. (See
+Passwordless SSH Setup).
+
+On each node, create /etc/mv2.conf with a single line containing the
+IP address of the local T4 interface. This is how MVAPICH2 picks which
+interface to use for RDMA traffic.
+
+On each node, edit /etc/hosts file. Comment the entry if there is an
+entry with 127.0.0.1 IP Address and local host name. Add an entry for
+corporate IP address and local host name (name that you have given in
+mpd.hosts file) in /etc/hosts file.
+
+To run MVAPICH2 application:
+
+ mpirun_rsh -ssh -np 8 -hostfile mpd.hosts <MVAPICH2 Application Path>
+
+============================================
+Testing connectivity with ping and rping:
+============================================
+
+Configure the ethernet interfaces for your T4 device. After you
+modprobe iw_cxgb4 you will see ethernet interfaces for the T4 device.
+Configure them with an appropriate ip address, netmask, etc.
+You can use the Linux ping command to test basic connectivity via the
+T4 interface.
+
+To test RDMA, use the rping command that is included in the librdmacm-utils 
+rpm:
+
+On the server machine:
+
+# rping -s -a 0.0.0.0 -p 9999
+
+On the client machine:
+
+# rping -c -VvC10 -a server_ip_addr -p 9999
+
+You should see ping data like this on the client:
+
+ping data: rdma-ping-0: ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqr
+ping data: rdma-ping-1: BCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrs
+ping data: rdma-ping-2: CDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrst
+ping data: rdma-ping-3: DEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstu
+ping data: rdma-ping-4: EFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuv
+ping data: rdma-ping-5: FGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvw
+ping data: rdma-ping-6: GHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwx
+ping data: rdma-ping-7: HIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxy
+ping data: rdma-ping-8: IJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz
+ping data: rdma-ping-9: JKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyzA
+client DISCONNECT EVENT...
+

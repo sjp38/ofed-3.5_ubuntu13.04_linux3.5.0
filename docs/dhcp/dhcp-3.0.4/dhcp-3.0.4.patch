@@ -1,0 +1,30 @@
+Index: dhcp-3.0.4/includes/site.h
+===================================================================
+--- dhcp-3.0.4.orig/includes/site.h	2002-03-12 20:33:39.000000000 +0200
++++ dhcp-3.0.4/includes/site.h	2006-05-23 11:34:38.000000000 +0300
+@@ -135,7 +135,7 @@
+    the aforementioned problems do not matter to you, or if no other
+    API is supported for your system, you may want to go with it. */
+ 
+-/* #define USE_SOCKETS */
++#define USE_SOCKETS
+ 
+ /* Define this to use the Sun Streams NIT API.
+ 
+Index: dhcp-3.0.4/common/discover.c
+===================================================================
+--- dhcp-3.0.4.orig/common/discover.c	2006-02-23 00:43:27.000000000 +0200
++++ dhcp-3.0.4/common/discover.c	2006-05-23 11:45:16.000000000 +0300
+@@ -532,6 +532,12 @@ void discover_interfaces (state)
+ 			break;
+ #endif
+ 
++		      case ARPHRD_INFINIBAND:
++			tmp -> hw_address.hlen = 1;
++			tmp -> hw_address.hbuf [0] = ARPHRD_INFINIBAND;
++			memcpy (&tmp -> hw_address.hbuf [1], sa.sa_data, 20);
++		        break;
++
+ 		      default:
+ 			log_error ("%s: unknown hardware address type %d",
+ 				   ifr.ifr_name, sa.sa_family);

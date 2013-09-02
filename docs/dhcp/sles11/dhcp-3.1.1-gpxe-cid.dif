@@ -1,0 +1,129 @@
+diff -ruN client/dhclient.c.gpxe client/dhclient.c
+--- client/dhclient.c.gpxe	2011-01-21 04:48:49.496984000 +0200
++++ client/dhclient.c	2011-01-21 04:51:10.760597000 +0200
+@@ -47,6 +47,13 @@
+ static char path_dhclient_script_array [] = _PATH_DHCLIENT_SCRIPT;
+ char *path_dhclient_script = path_dhclient_script_array;
+ 
++/* Default Prefix */
++static unsigned char default_prefix[12] = {
++	0xff, 0x00, 0x00, 0x00,
++	0x00, 0x00, 0x02, 0x00,
++	0x00, 0x02, 0xc9, 0x00
++};
++
+ int dhcp_max_agent_option_packet_length = 0;
+ 
+ int interfaces_requested = 0;
+@@ -575,6 +582,12 @@
+ static void setup_ib_interface(struct interface_info *ip)
+ {
+ 	struct group *g;
++	struct hardware *hw = &ip->hw_address;
++	char client_id[64];
++	char *arg_conf = NULL;
++	int arg_conf_len = 0;
++	isc_result_t status;
++	struct parse *cfile = (struct parse *)0;
+ 
+ 	/* Set the broadcast flag */
+ 	bootp_broadcast_always = 1;
+@@ -591,8 +604,39 @@
+ 		}
+ 	}
+ 
+-	/* No client ID specified */
+-	log_fatal("dhcp-client-identifier must be specified for InfiniBand");
++	/*
++	 * No client ID specified, make up one based on a default
++	 * "prefix" and the port GUID.
++	 *
++	 * NOTE: This is compatible with what gpxe does.
++	 */
++	sprintf(client_id, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x:%.2x",
++		default_prefix[0], default_prefix[1], default_prefix[2],
++		default_prefix[3], default_prefix[4], default_prefix[5],
++		default_prefix[6], default_prefix[7], default_prefix[8],
++		default_prefix[9], default_prefix[10], default_prefix[11],
++		hw->hbuf[1], hw->hbuf[2], hw->hbuf[3], hw->hbuf[4],
++		hw->hbuf[5], hw->hbuf[6], hw->hbuf[7], hw->hbuf[8]);
++
++	arg_conf_len = asprintf(&arg_conf,
++				"send dhcp-client-identifier %s;",
++				client_id);
++
++	if ((arg_conf == 0) || (arg_conf_len <= 0))
++		log_fatal("Unable to send option dhcp-client-identifier");
++
++	status = new_parse(&cfile, -1, arg_conf, arg_conf_len,
++			   "Automatic Infiniband client identifier", 0);
++
++	if ((status != ISC_R_SUCCESS) || (cfile->warnings_occurred))
++		log_fatal("Failed to parse Infiniband client identifier");
++
++	parse_client_statement(cfile, NULL, ip->client->config);
++
++	if (cfile->warnings_occurred)
++		log_fatal("Failed to parse Infiniband client identifier");
++
++	end_parse(&cfile);
+ }
+ 
+ static void usage ()
+diff -ruN common/discover.c.gpxe common/discover.c
+--- common/discover.c.gpxe	2011-01-21 04:48:49.474985000 +0200
++++ common/discover.c	2011-01-21 04:51:18.413829000 +0200
+@@ -120,6 +120,34 @@
+ 					       trace_outpacket_stop, MDL);
+ }
+ #endif
++static unsigned char * get_ib_hw_addr(char * name)
++{
++	struct ifaddrs *ifaddrs;
++	struct ifaddrs *ifa;
++	struct sockaddr_ll *sll = NULL;
++	static unsigned char hw_addr[8];
++
++	if (getifaddrs(&ifaddrs) == -1)
++		return NULL;
++
++	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
++		if (ifa->ifa_addr->sa_family != AF_PACKET)
++			continue;
++		if (ifa->ifa_flags & IFF_LOOPBACK)
++			continue;
++		if (strcmp(ifa->ifa_name, name) == 0) {
++			sll = (struct sockaddr_ll *)(void *)ifa->ifa_addr;
++			break;
++		}
++	}
++	if (sll == NULL) {
++		freeifaddrs(ifaddrs);
++		return NULL;
++	}
++	memcpy(hw_addr, &sll->sll_addr[sll->sll_halen - 8], 8);
++	freeifaddrs(ifaddrs);
++	return (unsigned char *)&hw_addr;
++}
+ 
+ isc_result_t interface_initialize (omapi_object_t *ipo,
+ 				   const char *file, int line)
+@@ -156,6 +184,7 @@
+ 	isc_result_t status;
+ 	static int setup_fallback = 0;
+ 	int wifcount = 0;
++	unsigned char *hw_addr;
+ 
+ 	/* Create an unbound datagram socket to do the SIOCGIFADDR ioctl on. */
+ 	if ((sock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+@@ -552,6 +581,10 @@
+ 			setup_ib_bcast_addr ( tmp );
+ 			tmp -> hw_address.hlen = 1;
+ 			tmp -> hw_address.hbuf [0] = ARPHRD_INFINIBAND;
++			hw_addr = get_ib_hw_addr(tmp -> name);
++			if (!hw_addr)
++				log_fatal("Failed getting %s hw addr", tmp -> name);
++			memcpy (&tmp -> hw_address.hbuf [1], hw_addr, 8);
+ 			break;
+ 
+ 		      default:

@@ -1,0 +1,68 @@
+===============================================================================
+                      OFED 1.5.4 for Linux
+            Mellanox Firmware Burning and Diagnostic Utilities 
+                        November 2011
+===============================================================================
+      
+===============================================================================
+Table of Contents
+===============================================================================
+1. Overview
+2. New Features
+3. Major Bugs Fixed 
+4. Known Issues
+
+===============================================================================
+1. Overview
+===============================================================================
+
+This package contains a burning and diagnostic tools for Mellanox
+manufactured cards. It also provides access to the relevant source code. Please
+see the file LICENSE for licensing details.
+    
+Package Contents:
+    a) mstflint source code
+    b) mflash lib
+       This lib provides Flash access through Mellanox HCAs.
+    c) mtcr lib (implemented in mtcr.h file)
+       This lib enables access to adapter hardware registers via PCIe
+    d) mstregdump utility
+       This utility dumps hardware registers from Mellanox hardware for later
+       analysis by Mellanox.
+    e) mstvpd
+       This utility dumps the on-card VPD (Vital Product Data, which contains
+       the card serial number, part number, and other info).
+    f) hca_self_test.ofed
+       This scripts checks the status of software, firmware and hardware of the
+       HCAs or NICs installed on the local host.
+
+===============================================================================
+2. New Features
+===============================================================================
+* mstflint tool functionality updated to the MFT-2.7.0/flint 
+  See MFT documentation on Mellanox web site for details.
+  Highlight features:
+
+  - Support ConnectX-3 flash access 
+  - Support SwitchX flash access
+  - Support HW access restriction key (where supported FW)
+
+===============================================================================
+3. Bugs Fixed 
+===============================================================================
+
+* Show correct device names in mstflint help
+
+===============================================================================
+4. Known Issues
+===============================================================================
+* The mstregdump tool does not support ConnectX3 and SwitchX device.
+
+* Rarely you may get the following error message when running mstflint:
+      Warning: memory access to device 0a:00.0 failed: Input/output error.
+      Warning: Fallback on IO: much slower, and unsafe if device in use.
+      *** buffer overflow detected ***: mstflint terminated
+
+  To solve the issue, run "mst start" (requires MFT - Mellanox Firmware Tools package) and 
+  then re-run mstflint.
+

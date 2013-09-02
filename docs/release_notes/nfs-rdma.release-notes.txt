@@ -1,0 +1,246 @@
+################################################################################
+#									       #
+#				NFS/RDMA README				       #
+#									       #
+################################################################################
+
+ Author: NetApp and Open Grid Computing
+ 
+ Adapted for OFED 1.5.1 (from linux-2.6.30/Documentation/filesystems/nfs-rdma.txt)
+ by Jon Mason
+
+ Further adapted for OFED 1.5.4 by Jeff Becker
+
+Table of Contents
+~~~~~~~~~~~~~~~~~
+ - Overview
+ - OFED 1.5.3 limitations
+ - OFED 1.5.1 limitations
+ - Getting Help
+ - Installation
+ - Check RDMA and NFS Setup
+ - NFS/RDMA Setup
+
+Overview
+~~~~~~~~
+
+  This document describes how to install and setup the Linux NFS/RDMA client
+  and server software.
+
+  The NFS/RDMA client was first included in Linux 2.6.24. The NFS/RDMA server
+  was first included in the following release, Linux 2.6.25.
+
+  In our testing, we have obtained excellent performance results (full 10Gbit
+  wire bandwidth at minimal client CPU) under many workloads. The code passes
+  the full Connectathon test suite and operates over both Infiniband and iWARP
+  RDMA adapters.
+
+OFED 1.5.4 limitations:
+~~~~~~~~~~~~~~~~~~~~~
+  NFS/RDMA has been ported and tested on the following kernels:
+  - Redhat Enterprise Linux (RHEL) version 6.1
+  - SUSE Linux Enterprise Server (SLES) version 11 service pack 1
+  - kernel.org 2.6.30-2.6.38
+
+OFED 1.5.3 limitations:
+~~~~~~~~~~~~~~~~~~~~~
+  NFSoRDMA was removed from the list of packages in the install script to
+  prevent it's installation by default.
+  To force NFSoRDMA installation one need to add the following lines to the
+  ofed.conf:
+  nfsrdma=y
+  rnfs-utils=y
+  To get ofed.conf, run 
+  # ./install.pl -p
+  After adding the lines above to ofed.conf, to install OFED run 
+  # ./install.pl -c ofed.conf
+
+OFED 1.5.1 limitations:
+~~~~~~~~~~~~~~~~~~~~~
+  NFS-RDMA is supported for the following releases:
+  - Redhat Enterprise Linux (RHEL) version 5.2
+  - Redhat Enterprise Linux (RHEL) version 5.3
+  - Redhat Enterprise Linux (RHEL) version 5.4
+  - SUSE Linux Enterprise Server (SLES) version 11
+
+  And the following kernel.org kernels:
+  - 2.6.22
+  - 2.6.25
+  - 2.6.30
+
+  All other Linux Distrubutions and kernel versions are NOT supported on OFED
+  1.5.1
+
+Getting Help
+~~~~~~~~~~~~
+
+  If you get stuck, you can ask questions on the
+  nfs-rdma-devel@lists.sourceforge.net, or linux-rdma@vger.kernel.org
+  mailing lists.
+
+Installation
+~~~~~~~~~~~~
+
+  These instructions are a step by step guide to building a machine for
+  use with NFS/RDMA.
+
+  - Install an RDMA device
+
+    Any device supported by the drivers in drivers/infiniband/hw is acceptable.
+
+    Testing has been performed using several Mellanox-based IB cards and 
+    the Chelsio cxgb3 iWARP adapter.
+
+  - Install OFED 1.5.4
+
+    NFS-RDMA will be installed by default if you simply select "install all",
+    and can be specifically included by a "custom" install.
+
+    In addition, the install script will install a version of the nfs-utils that
+    is required for NFS/RDMA.  The binary installed will be named "mount.rnfs".
+    This version is not necessary for Linux Distributions with nfs-utils 1.1 or
+    later.
+
+    Upon successful installation, the nfs kernel modules will be placed in the
+    directory /lib/modules/'uname -a'/updates. It is recommended that you reboot
+    to ensure that the correct modules are loaded.
+
+Check RDMA and NFS Setup
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Before configuring the NFS/RDMA software, it is a good idea to test
+    your new kernel to ensure that the kernel is working correctly.
+    In particular, it is a good idea to verify that the RDMA stack
+    is functioning as expected and standard NFS over TCP/IP and/or UDP/IP
+    is working properly.
+
+  - Check RDMA Setup
+
+    If you built the RDMA components as modules, load them at
+    this time. For example, if you are using a Mellanox Tavor/Sinai/Arbel
+    card:
+
+    $ modprobe ib_mthca
+    $ modprobe ib_ipoib
+
+    If you are using InfiniBand, make sure there is a Subnet Manager (SM)
+    running on the network. If your IB switch has an embedded SM, you can
+    use it. Otherwise, you will need to run an SM, such as OpenSM, on one
+    of your end nodes.
+
+    If an SM is running on your network, you should see the following:
+
+    $ cat /sys/class/infiniband/driverX/ports/1/state
+    4: ACTIVE
+
+    where driverX is mthca0, ipath5, ehca3, etc.
+
+    To further test the InfiniBand software stack, use IPoIB (this
+    assumes you have two IB hosts named host1 and host2):
+
+    host1$ ifconfig ib0 a.b.c.x
+    host2$ ifconfig ib0 a.b.c.y
+    host1$ ping a.b.c.y
+    host2$ ping a.b.c.x
+
+    For other device types, follow the appropriate procedures.
+
+  - Check NFS Setup
+
+    For the NFS components enabled above (client and/or server),
+    test their functionality over standard Ethernet using TCP/IP or UDP/IP.
+
+NFS/RDMA Setup
+~~~~~~~~~~~~~~
+
+  We recommend that you use two machines, one to act as the client and
+  one to act as the server.
+
+  One time configuration:
+
+  - On the server system, configure the /etc/exports file and
+    start the NFS/RDMA server.
+
+    Exports entries with the following formats have been tested:
+
+    /vol0   192.168.0.47(fsid=0,rw,async,insecure,no_root_squash)
+    /vol0   192.168.0.0/255.255.255.0(fsid=0,rw,async,insecure,no_root_squash)
+
+    The IP address(es) is(are) the client's IPoIB address for an InfiniBand
+    HCA or the client's iWARP address(es) for an RNIC.
+
+    NOTE: The "insecure" option must be used because the NFS/RDMA client does
+    not use a reserved port.
+
+ Each time a machine boots:
+
+  - Load and configure the RDMA drivers
+
+    For InfiniBand using a Mellanox adapter:
+
+    $ modprobe ib_mthca
+    $ modprobe ib_ipoib
+    $ ifconfig ib0 a.b.c.d
+
+    NOTE: use unique addresses for the client and server
+
+  - Start the NFS server
+
+    Load the RDMA transport module:
+
+    $ modprobe svcrdma
+
+    Start the server:
+
+    $ /etc/init.d/nfsserver start
+
+    or
+
+    $ service nfs start
+
+    Instruct the server to listen on the RDMA transport:
+
+    $ echo rdma 20049 > /proc/fs/nfsd/portlist
+
+    NOTE for SLES10 servers: The nfs start scripts on most distro's start
+    rpc.statd by default.  However, the in-kernel lockd that was in SLES10 has
+    been removed in the new kernels.  Since OFED is back-porting the new code to
+    the older distro's, there is no in-kernel lockd in SLES10 and the SLES10
+    nfsserver scripts do not know the need to start it.  Therefore, the
+    nfsserver scripts will be modified when the rnfs-utils rpm is installed to
+    start/stop rpc.statd.
+
+  - On the client system
+
+    Load the RDMA client module:
+
+    $ modprobe xprtrdma
+
+    Mount the NFS/RDMA server:
+
+    $ mount -t nfs4 <IPoIB-server-name-or-address>:/ /mnt -o rdma,port=20049 
+
+    To verify that the mount is using RDMA, run "cat /proc/mounts" and check
+    the "proto" field for the given mount.
+
+  Congratulations! You're using NFS/RDMA!
+
+Known Issues
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you're running NFSRDMA over Chelsio's T3 RNIC and your cients are using
+a 64KB page size (like PPC64 and IA64 systems) and your server is using a
+4KB page size (like i386 and X86_64), then you need to mount the server
+using rsize=32768,wsize=32768 to avoid overrunning the Chelsio RNIC fast
+register limits.  This is a known firmware limitation in the Chelsio RNIC.
+
+Running NFSRDMA over Mellanox's ConnectX HCA requires that the adapter firmware
+be 2.7.0 or greater on all NFS clients and servers.  Firmware 2.6.0 has known
+issues that prevent the RDMA connection from being established.  Firmware 2.7.0
+has resolved these issues.
+
+IPv6 support requires portmap that supports version 4. Portmap included in RHEL5
+and SLES10 only supports version 2.  Without version 4 support, the following
+error will be logged:
+       svc: failed to register lockdv1 (errno 97).
+This error will not affect IPv4 support.

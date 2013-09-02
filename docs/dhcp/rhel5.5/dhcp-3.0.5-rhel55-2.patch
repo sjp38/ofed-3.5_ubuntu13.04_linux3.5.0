@@ -1,0 +1,22 @@
+--- dhcp.spec.ib	2010-08-31 19:50:18.000000000 +0300
++++ dhcp.spec	2010-09-19 20:30:36.150032000 +0200
+@@ -56,6 +56,8 @@ Patch21: %{name}-3.0.5-failover-leak.pat
+ Patch22: %{name}-3.0.5-short-lease.patch
+ Patch23: %{name}-3.0.5-partner-down.patch
+ Patch24: %{name}-3.0.5-lease-exhaustion.patch
++Patch25: %{name}-3.0.5-lpf-ib.patch
++Patch26: %{name}-3.0.5-improved-xid.patch
+ 
+ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+ Requires(post): chkconfig, coreutils
+@@ -221,6 +223,10 @@ esac
+ # Backport from dhcp-3.0.6
+ %patch24 -p1 -b .exhaustion
+ 
++%patch25 -p1 -b .ib
++
++%patch26 -p1 -b .xid
++
+ %build
+ %{__cp} %SOURCE1 .
+ %{__cat} << EOF > site.conf

@@ -1,0 +1,25 @@
+--- dhcp.spec.ib	2010-01-11 18:04:03.000000000 +0200
++++ dhcp.spec	2010-09-20 13:11:06.727132000 +0200
+@@ -56,6 +56,9 @@ Patch21:  %{name}-4.1.0-64_bit_lease_par
+ Patch22:  %{name}-4.1.0-CVE-2009-1892.patch
+ Patch23:  %{name}-4.1.0p1-capability.patch
+ Patch24:  %{name}-4.1.0p1-failover-leak.patch
++Patch25:  %{name}-4.1.0p1-lpf-ib.patch
++Patch26:  %{name}-4.1.0p1-improved-xid.patch
++Patch27:  %{name}-4.1.0p1-gpxe-cid.patch
+ 
+ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+ BuildRequires: autoconf
+@@ -222,6 +224,12 @@ libdhcpctl and libomapi static libraries
+ # Memory leak in the load_balance_mine() function is fixed (#554384)
+ %patch24 -p1
+ 
++%patch25 -p1
++
++%patch26 -p1
++
++%patch27 -p1
++
+ # Copy in documentation and example scripts for LDAP patch to dhcpd
+ %{__install} -p -m 0755 ldap-for-dhcp-%{ldappatchver}/dhcpd-conf-to-ldap contrib/
+ 

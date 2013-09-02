@@ -1,0 +1,186 @@
+# QLogic VNIC configuration file
+#
+# This file documents and describes the use of the
+# VNIC configuration file qlgc_vnic.cfg. This file
+# should reside in /etc/infiniband/qlgc_vnic.cfg
+#
+# 
+# Knowing how to fill the configuration file
+###############################################
+#
+# For filling the configuration file you need to know
+# some information about your EVIC/VEx device. This information
+# can be obtained with the help of the ib_qlgc_vnic_query tool.
+# "ib_qlgc_vnic_query -es" command will give DGID, IOCGUID and IOCSTRING information about
+# the EVIC/VEx IOCs that are available through port 1 and
+# "ib_qlgc_vnic_query -es -d /dev/infiniband/umad1" will give information about
+# the EVIC/VEX IOCs available through port 2.
+# 
+# Refer to the README for more information about the ib_qlgc_vnic_query tool.
+#
+#
+# General structure of the configuration file
+###############################################
+#
+# All lines beginning with a # are treated as comments.
+#
+# A simple configuration file consists of CREATE commands
+# for each VNIC interface to be created. 
+#
+# A simple CREATE command looks like this:
+#
+#  {CREATE; NAME="eioc1";
+#	DGID=0xfe8000000000000000066a0258000001; IOCGUID=0x66a0130000001; IOCSTRING="Chassis 0x00066A00010003F2, Slot 1, IOC 1";
+#  }	
+#
+#Where 
+#
+#NAME - The device name for the interface
+#
+#DGID - The DGID of the IOC to use.
+#
+#	If DGID is specified then IOCGUID MUST also be specified.
+#
+#	Though specifying DGID is optional, using this option is recommended,
+#	as it will provide the quickest way of starting up the VNIC service.
+#
+#
+#IOCGUID - The GUID of the IOC to use.
+#
+#IOCSTRING - The IOC Profile ID String of the IOC to use.  
+#
+#	  Either an IOCGUID or an IOCSTRING MUST always be specified.
+#
+#	  If DGID is specified then IOCGUID MUST also be specified.
+#
+#	  If no DGID is specified and both IOCGUID and IOCSTRING are specified
+#	  then IOCSTRING is given preference and the DGID of the IOC whose
+#	  IOCSTRING is specified is used to create the VNIC interface.
+#	  
+#	 If hotswap capability of EVIC/VEx is to be used, then IOCSTRING
+#	 must be specified.
+#
+#INSTANCE - Defaults to 0.  Range 0-255.  If a host will connect to the
+#	same IOC more than once, each connection must be assigned a unique
+#       number.  
+#
+#
+#RX_CSUM - defaults to TRUE.  When true, indicates that the receive checksum
+#	    should be done by the EVIC/VEx
+#
+#HEARTBEAT - defaults to 100.  Specifies the time in 1/100'ths of a second
+#	    between heartbeats
+#
+#PORT - Specification for local HCA port. First port is 1.
+#
+#HCA - Optional HCA specification for use with PORT specification. First HCA is 0.
+#
+#PORTGUID - The PORTGUID of the IB port to use.
+#
+#		Use of PORTGUID for configuring the VNIC interface has an 
+#		advantage on hosts having more than 1 HCAs plugged in. As
+#		PORTGUID is persistent for given IB port, VNIC configurations
+#		would be consistent and reliable - unaffected by restarts of
+#		OFED IB stack on host having more than 1 HCAs plugged in.
+#
+#		On the downside, if HCA on the host is changed, VNIC interfaces
+#		configured with PORTGUID needs reconfiguration.
+#
+#IB_MULTICAST - Controls enabling or disabling of IB multicast feature on VNIC.
+#               Defaults to TRUE implying IB multicast is enabled for 
+#               the interface. To disable IB multicast, set it to FALSE.
+#
+# Example of DGID and IOCGUID based configuration (this configuration will give
+# the quickest start up of VNIC service):
+#
+#  {CREATE; NAME="eioc1";
+#	 DGID=0xfe8000000000000000066a0258000001; IOCGUID=0x66a0130000001; 
+#  }
+#
+#
+# Example of IOCGUID based configuration:
+#
+#  {CREATE; NAME="eioc1"; IOCGUID=0x66A013000010C;
+#     RX_CSUM=TRUE;
+#     HEARTBEAT=100; }
+#
+# Example of IOCSTRING based configuration:
+#
+#  {CREATE; NAME="eioc1"; IOCSTRING="Chassis 0x00066A0050000018, Slot 2, IOC 1";
+#     RX_CSUM=TRUE;
+#     HEARTBEAT=100; }
+#
+#
+#Failover configuration:
+#########################
+#
+# It is possible to create a VNIC interface with failover configuration
+# by using the PRIMARY and SECONDARY commands. The IOC specified in
+# the PRIMARY command will be used as the primary IOC for this interface
+# and the IOC specified in the SECONDARY command will be used as the
+# fail-over backup in case the connection with the primary IOC fails
+# for some reason.
+#
+# PRIMARY and SECONDARY commands are written in the following way:
+#
+# PRIMARY={DGID=...;IOCGUID=...; IOCSTRING=...;INSTANCE=... } - 
+# IOCGUID, and INSTANCE must be values that are unique to the primary interface
+#
+# SECONDARY={DGID=...;IOCGUID=...; INSTANCE=... } - 
+# IOCGUID, and INSTANCE must be values that are unique to the secondary interface
+#
+# OR it can also be specified without using DGID, like this:
+#
+# PRIMARY={IOCGUID=...; INSTANCE=... } - IOCGUID may be substituted with 
+#   IOCSTRING.  IOCGUID, IOCSTRING, and INSTANCE must be values that are
+#	unique to the primary interface
+#
+#  SECONDARY={IOCGUID=...; INSTANCE=... } - bring up a secondary connection for
+#	fail-over.  IOCGUID may be substituted with IOCSTRING.  IOCGUID, IOCSTRING,
+#   and INSTANCE values to be used for the secondary connection
+#
+#
+#Examples of failover configuration:
+#
+#{CREATE; NAME="veth1";
+#        PRIMARY={ DGID=0xfe8000000000000000066a0258000001; IOCGUID=0x66a0130000001; IOCSTRING="Chassis 0x00066A00010003F2, Slot 1, IOC 1";
+#          INSTANCE=1; PORT=1; }
+#        SECONDARY={DGID=0xfe8000000000000000066a0258000001; IOCGUID=0x66a0230000001; IOCSTRING="Chassis 0x00066A00010003F2, Slot 1, IOC 2";
+#          INSTANCE=1; PORT=2; }
+#}
+#
+#  {CREATE; NAME="eioc2";
+#   PRIMARY = {IOCGUID=0x66A0130000105; INSTANCE=0; PORT=1; }
+#   SECONDARY = {IOCGUID=0x66A013000010C; INSTANCE=0; PORT=2; }
+#  }
+#
+#Example of configuration with IB_MULTICAST
+#
+#  {CREATE; NAME="eioc2";
+#   PRIMARY = {IOCGUID=0x66A0130000105; INSTANCE=0; PORT=1; IB_MULTICAST=FALSE; }
+#   SECONDARY = {IOCGUID=0x66A013000010C; INSTANCE=0; PORT=2; IB_MULTICAST=FALSE; }
+#  }
+#
+# Example of HCA/PORT and PORTGUID configurations:
+#	{
+#	CREATE; NAME="veth1";
+#		PRIMARY={IOCGUID=00066a02de000070; INSTANCE=1; PORTGUID=0x0002c903000010f5; }
+#		SECONDARY={IOCGUID=00066a02de000070; INSTANCE=2; PORTGUID=0x0002c903000010f6; }
+#	}
+#
+#	{
+#	CREATE; NAME="veth2";
+#		PRIMARY={IOCGUID=00066a02de000070; DGID=fe8000000000000000066a21de000070; INSTANCE=3; HCA=1; PORT=2; }
+#		SECONDARY={IOCGUID=00066a02de000070; DGID=fe8000000000000000066a21de000070; INSTANCE=4; HCA=0; PORT=1; }
+#	}
+#
+#	{
+#	    CREATE; NAME="veth3";
+#		IOCSTRING="EVIC in Chassis 0x00066a00db00001e, Slot 1, Ioc 2";
+#		INSTANCE=5 PORTGUID=0x0002c90300000786;
+#	}
+#	{
+#		CREATE; NAME="veth4;
+#			IOCGUID=00066a02de000070;
+#			INSTANCE=6; HCA=1; PORT=2;
+#	}

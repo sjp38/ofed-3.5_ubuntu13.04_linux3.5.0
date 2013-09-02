@@ -1,0 +1,21 @@
+diff -ruN dhcp.spec.ib dhcp.spec
+--- dhcp.spec.ib	2010-05-12 09:42:23.000000000 +0300
++++ dhcp.spec	2010-09-28 14:54:46.226304000 +0200
+@@ -82,6 +82,8 @@
+ Patch60:        dhcp-3.1.3-dhclient-script.dif
+ Patch61:        dhcp-3.1.3-dhclient-script.bnc555095.dif
+ Patch62:        dhcp-3.1.3-dhclient-script.bnc585380.dif
++Patch70:	dhcp-3.1.1-lpf-ib.dif
++Patch71:	dhcp-3.1.1-improved-xid.dif
+ ##
+ Obsoletes:      dhcp-base
+ Provides:       dhcp-base:/usr/bin/omshell
+@@ -205,6 +207,8 @@
+ %patch60 -p0
+ %patch61 -p0
+ %patch62 -p0
++%patch70 -p0
++%patch71 -p0
+ ##
+ find . -type f -name \*.cat\* -exec rm -f {} \;
+ cp -p %{S:2} %{S:3} %{S:11} %{S:12} %{S:14} %{S:32} %{S:33} . 

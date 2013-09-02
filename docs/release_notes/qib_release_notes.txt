@@ -1,0 +1,26 @@
+	      Open Fabrics Enterprise Distribution (OFED)
+		    qib in OFED 3.5 Release Notes
+
+			  December 2012
+
+======================================================================
+1. Overview
+======================================================================
+qib is the low level driver implementation for all Intel(R) True Scale 
+Fabric HCAs, also known as QLogic TrueScale PCI-Express HCAs, including,
+
+  QDR HCAs, all x8 PCIe Gen2:  
+    - QLE7340 (single port) 
+    - QLE7342 (dual port)
+    - QMH7342
+    - QME7342
+    - QME7362
+  DDR HCAs:  
+    - QLE7240 (x8 PCIe Gen1), 
+    - QLE7280 (x16 PCIe Gen1) 
+    
+
+The qib driver has been updated for OFED 3.5.
+
+The qib kernel driver obsoletes the ipath kernel driver but is
+compatible with libipathverbs so no new user level components are needed.

@@ -1,0 +1,22 @@
+--- dhcp.spec.ib	2010-02-11 12:46:05.000000000 +0200
++++ dhcp.spec	2010-09-20 12:40:18.617505000 +0200
+@@ -54,6 +54,8 @@ Patch19: %{name}-3.0.5-honor-peer-vars.p
+ Patch20: %{name}-3.0.5-IFNAMSIZ.patch
+ Patch21: %{name}-3.0.5-failover-leak.patch
+ Patch22: %{name}-3.0.5-short-lease.patch
++Patch23: %{name}-3.0.5-lpf-ib.patch
++Patch24: %{name}-3.0.5-improved-xid.patch
+ 
+ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+ Requires(post): chkconfig, coreutils
+@@ -206,6 +208,10 @@ esac
+ # Fix dhclient to not renew it's lease too often when gets very short lease from server (RHBZ #498658)
+ %patch22 -p1 -b .short-lease
+ 
++%patch23 -p1 -b .ib
++
++%patch24 -p1 -b .xid
++
+ %build
+ %{__cp} %SOURCE1 .
+ %{__cat} << EOF > site.conf

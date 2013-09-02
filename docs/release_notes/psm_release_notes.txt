@@ -1,0 +1,58 @@
+              Open Fabrics Enterprise Distribution (OFED)
+                    PSM in OFED 3.5 Release Notes
+
+                          December 2012
+
+======================================================================
+1. Overview
+======================================================================
+
+The Performance Scaled Messaging (PSM) API is Intel's low-level user-level
+communications interface for the Intel(R) True Scale Fabric family of products.
+
+The PSM libraries are included in the infinipath-psm-3.1-364.1140_open.src.rpm
+source RPM and get built and installed as part of a default OFED
+install process.
+
+The primary way to use PSM is by compiling applications with an MPI that has
+been built to use the PSM layer as its interface to Intel HCAs.
+PSM is the high-performance interface to the Intel(R) True Scale HCAs.
+
+Minimal instructions* for building two MPIs tested with OFED 
+with PSM support are as follows:
+
+
+Open MPI:
+
+- Download a recent Open MPI tar ball from 
+   http://www.open-mpi.org/software/ompi/v1.6/ .
+  Versions 1.6.1 & 1.6.3 has been tested with PSM from this OFED release.
+- Untar the file and cd to the Open MPI directory.  Then
+  ./configure --with-psm --prefix=<install directory>
+  make
+  make install
+
+MVAPICH2:
+
+- Download a recent MVAPICH2 tar ball from
+   http://mvapich.cse.ohio-state.edu/download/mvapich2/
+  Version 1.8.1 has been tested with PSM from this OFED release.
+- Untar the file and go to the mvapich2-1.x.x directory
+- Execute the configure and make commands as follows:
+  ./configure --prefix=<install directory> --with-device=ch3:psm \
+   --enable-shared
+  make
+  make install
+
+
+
+* To configure with a different compiler suite than the native GCC suite on your
+  Linux machine, set the configure or script variables: CC, CXX, F77, F90 to be
+  assigned to the appropriate compiler names for your suite, such as for the 
+  Intel Compiler suite:
+  CC=icc
+  CXX=icpc
+  F77=ifort
+  F90=ifort
+
+

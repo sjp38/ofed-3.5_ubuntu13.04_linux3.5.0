@@ -1,0 +1,23 @@
+diff -ruN dhcp.spec.ib dhcp.spec
+--- dhcp.spec.ib	2009-02-23 20:46:55.000000000 +0200
++++ dhcp.spec	2010-09-28 14:17:55.024158000 +0200
+@@ -85,6 +85,9 @@
+ Patch43:        dhcp-3.1.1-dhclient-no-dereference-twice.dif
+ Patch50:        dhcp-3.1.1-dhclient-conf.dif
+ Patch60:        dhcp-3.1.1-dhclient-script.dif
++Patch70:	dhcp-3.1.1-lpf-ib.dif
++Patch71:	dhcp-3.1.1-improved-xid.dif
++
+ ##
+ Obsoletes:      dhcp-base
+ Provides:       dhcp-base:/usr/bin/omshell
+@@ -218,6 +221,9 @@
+ %patch43 -p0
+ %patch50 -p0
+ %patch60 -p0
++%patch70 -p0
++%patch71 -p0
++
+ ##
+ find . -type f -name \*.cat\* -exec rm -f {} \;
+ cp -p %{S:2} %{S:3} %{S:11} %{S:12} %{S:14} %{S:32} %{S:33} . 

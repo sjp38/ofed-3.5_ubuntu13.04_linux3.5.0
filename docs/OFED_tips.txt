@@ -1,0 +1,473 @@
+		Open Fabrics Enterprise Distribution (OFED)
+		      Tips for Working with OFED 3.5
+
+		 	     February 2013
+
+===============================================================================
+Table of Contents
+===============================================================================
+1. OFED Utilities
+2. Debug HOWTOs
+3. Pinning (Locking) User Memory Pages
+4. External Module Compilation Over OFED-3.5
+5. Adding vendor specific actions to the installation of OFED
+6. How to compile OFED sources manually
+
+===============================================================================
+1. OFED Utilities
+===============================================================================
+
+The OFED package includes utilities under <prefix>/bin, where <prefix> stands
+for the OFED installation path. To retrieve this path, run the script 
+"/etc/infiniband/info" as explained in Section 2.2 below.
+
+Notes:
+------
+   This document includes descriptions for a subset of the existing utilities.
+   To learn about other utilities, use their --help flag.
+
+
+1.1 Device Information
+----------------------
+Device information can be obtained using several utilities:
+
+a. ibv_devinfo
+
+   ibv_devinfo prints the ca attributes.
+
+   usage:
+     ibv_devinfo
+
+     Options:
+       -d, --ib-dev=<dev>    use IB device <dev> (default: first device found)
+       -i, --ib-port=<port>  use port <port> of IB device (default: all ports)
+       -l, --list            print only the IB devices names
+       -v, --verbose         print all the attributes of the IB device(s)
+
+b. ibstat
+
+	usage:
+	ibstat [OPTIONS] <ca_name> [portnum]
+
+	Options:
+	-d	debug
+	-l	list all IB devices
+	-s	print short device summary
+	-p	print port GUIDs
+	-V	print ibstat version information and exit
+	-h	print usage
+
+	Examples:
+	ibstat -l 		# list all IB devices
+	ibstat mlx4_0 2 	# stat port 2 of mlx4_0
+
+c. Using sysfs file system
+	The driver supports the sysfs file system under: /sys/class/infiniband
+
+	Examples:
+
+	> ls /sys/class/infiniband/mlx4_0/
+	board_id device fw_ver hca_type hw_rev node_desc node_guid node_type
+	ports sys_image_guid
+
+	> cat /sys/class/infiniband/mlx4_0/board_id
+	MT_1090110019
+
+	> ls /sys/class/infiniband/mlx4_0/ports/1/
+	cap_mask counters gids lid lid_mask_count phys_state pkeys rate sm_lid
+	sm_sl state
+
+	> cat /sys/class/infiniband/mlx4_0/ports/1/state
+	4: ACTIVE
+
+1.2 Performance Tests
+---------------------
+	The following performance tests are provided with the OFED release:
+
+	1. Latency tests:
+	   - ib_read_lat: RDMA read
+	   - ib_write_lat: RDMA write
+	   - ib_send_lat: UD, UC and RC (default) send
+
+	2. Bandwidth tests:
+	   - ib_read_bw: RDMA read
+	   - ib_write_bw: RDMA write
+	   - ib_send_bw: UD, UC and RC (default) send
+	   - ib_write_bw_postlist : RDMA write , posting a list of WQEs.
+
+	 3.Other:
+           - ib_clock_test : tests CPU clock samples.
+
+	Usage:
+	Server: <test name> <options>
+	Client: <test name> <options> <server IP address>
+		<server IP address> is an Ethernet or IPoIB address.
+	--help	  lists the available <options>. The same options must be
+		  passed to both server and client.	
+	
+	Note: See PERF_TEST_README.txt for more information on the performance
+	      tests.
+	
+	Example: ib_send_bw
+	Usage:
+	ib_send_bw 			start a server and wait for connection
+	ib_send_bw <host>		connect to server at <host>
+
+	Common Options to all tests::
+        -p, --port=<port>               Listen on/connect to port <port>
+                                        (default: 18515)
+        -d, --ib-dev=<dev>              Use IB device <dev>
+                                        (default: first device found)
+        -i, --ib-port=<port>            Use port <port> of IB device
+                                        (default: 1)
+        -c, --connection=<RC/UC/UD>     Connection type RC/UC/UD (default: RC)
+        -m, --mtu=<mtu>                 Mtu size (default: 1024)
+        -s, --size=<size>               Size of message to exchange
+                                        (default: 65536)
+        -a, --all                       Run sizes from 2 up to 2^23
+        -t, --tx-depth=<dep>            Size of tx queue (default: 300)
+        -r, --rx-depth=<dep>            Make rx queue bigger than tx
+                                        (default 600).
+        -I, --inline_size=<size>        Max size Message to be sent in inline
+                                        mode.On Bw tests default is  1,latency
+				        tests is 400.
+        -n, --iters=<iters>             number of exchanges
+                                        (at least 2, default: 1000)
+        -u, --qp-timeout=<timeout>      QP timeout, timeout value is 4 usec*2
+					^(timeout).
+        -b, --bidirectional             Measure bidirectional bandwidth
+                                        (default: unidirectional)
+        -V, --version                   Display version number
+        -S, --sl=<sl>                   SL (default 0).
+        -x, --gid-index=<index>         Test uses GID with GID index taken
+					from command Line 
+					(for RDMAoE index should be 0).
+        -e, --events                    Sleep on CQ events (default poll).
+        -N, --no peak-bw                Cancel peak-bw calculation
+                                        (default with peak-bw)
+         -F, --CPU-freq                 Do not fail even if cpufreq_ondemand
+					module.
+
+1.3 Ping-pong Example Tests
+---------------------------
+	The ping-pong example tests provide basic connectivity tests. Each test
+	has a help message (-h).
+	- ibv_ud_pingpong
+	- ibv_rc_pingpong
+	- ibv_srq_pingpong
+	- ibv_uc_pingpong
+
+	Example: ibv_ud_pingpong --h
+	Usage:
+	ibv_ud_pingpong  	start a server and wait for connection
+	ibv_ud_pingpong <host>	connect to server at <host>
+
+	options:
+	-p, --port=<port> 	listen on/connect to port <port>
+					(default: 18515)
+	-d, --ib-dev=<dev> 	use IB device <dev>
+					(default: first device found)
+	-i, --ib-port=<port> 	use port <port> of IB device (default: 1)
+	-s, --size=<size> 	size of message to exchange (default: 2048)
+	-r, --rx-depth=<dep> 	number of receives to post at a time
+					(default: 500)
+	-n, --iters=<iters> 	number of exchanges (default: 1000)
+	-e, --events 		sleep on CQ events (default: poll)
+
+
+===============================================================================
+2. Debug HOWTOs
+===============================================================================
+
+2.1 OFED Components and Version Information
+-------------------------------------------
+The text file BUILD_ID provides data on all OFED components (whether installed
+or not). This file is a part of the ofed-docs RPM and installed under 
+/usr/share/doc/ofed-docs-1.5.1 on RedHat, and under 
+/usr/share/doc/packages/ofed-docs-1.5.1 on SuSE.
+
+The same information can be obtained by executing the 'ofed_info' command. For
+example:
+
+# ofed_info -s
+OFED-3.5-rc1:
+
+# ofed_info
+OFED-3.5-rc1:
+
+ofed-scripts:
+git://git.openfabrics.org/~vlad/ofed_scripts.git compat-rdma
+
+compat-rdma:
+git://git.openfabrics.org/compat-rdma/compat-rdma.git master
+commit 2036874cf4c072c04b96b69e5b965a788fc77a6d
+
+dapl:
+http://www.openfabrics.org/downloads/dapl/dapl-2.0.36.tar.gz
+
+ib-bonding:
+http://www.openfabrics.org/downloads/ib-bonding/ib-bonding-0.9.0-43.src.rpm
+
+ibacm:
+http://www.openfabrics.org/downloads/rdmacm/ofed/ibacm-1.0.7.tar.gz
+
+ibsim:
+http://www.openfabrics.org/downloads/ibsim/ibsim-0.5-0.1.g327c3d8.tar.gz
+
+ibutils:
+http://www.openfabrics.org/downloads/ibutils/ibutils-1.5.7-0.1.g05a9d1a.tar.gz
+
+infiniband-diags:
+http://www.openfabrics.org/downloads/management/infiniband-diags-1.6.1.tar.gz
+
+infinipath-psm:
+http://www.openfabrics.org/downloads/infinipath-psm/infinipath-psm-3.1-364.1140_open.tar.gz
+
+libcxgb3:
+http://www.openfabrics.org/downloads/cxgb3/libcxgb3-1.3.1.tar.gz
+
+libcxgb4:
+http://www.openfabrics.org/downloads/cxgb4/libcxgb4-1.2.0.tar.gz
+
+libehca:
+http://www.openfabrics.org/downloads/libehca/libehca-1.2.2-0.1.g69e1a88.tar.gz
+
+libibcm:
+http://www.openfabrics.org/downloads/rdmacm/libibcm-1.0.5.tar.gz
+
+libibmad:
+http://www.openfabrics.org/downloads/management/libibmad-1.3.9.tar.gz
+
+libibumad:
+http://www.openfabrics.org/downloads/management/libibumad-1.3.8.tar.gz
+
+libibverbs:
+http://www.openfabrics.org/downloads/verbs/libibverbs-1.1.6.tar.gz
+
+libipathverbs:
+http://www.openfabrics.org/downloads/libipathverbs/libipathverbs-1.2.tar.gz
+
+libmlx4:
+http://www.openfabrics.org/downloads/mlx4/libmlx4-1.0.4.tar.gz
+
+libmthca:
+http://www.openfabrics.org/downloads/libmthca/libmthca-1.0.5-0.1.gbe5eef3.tar.gz
+
+libnes:
+http://www.openfabrics.org/downloads/nes/libnes-1.1.3.tar.gz
+
+librdmacm:
+http://www.openfabrics.org/downloads/rdmacm/librdmacm-1.0.16.tar.gz
+
+mstflint:
+http://www.openfabrics.org/downloads/mstflint/mstflint-1.4-1.18.g1adcfbf.tar.gz
+
+ofed-docs:
+git://git.openfabrics.org/compat-rdma/docs.git ofed_3_2
+commit 6dff336cfb197351c9fa0b50c0715b59a4d822cf
+
+opensm:
+http://www.openfabrics.org/downloads/management/opensm-3.3.15.tar.gz
+
+perftest:
+http://www.openfabrics.org/downloads/perftest/perftest-1.4.0-0.66.g9074687.tar.gz
+
+qlvnictools:
+http://www.openfabrics.org/downloads/qlvnictools/qlvnictools-0.0.1-0.1.ge27eef7.tar.gz
+
+qperf:
+http://www.openfabrics.org/downloads/qperf/qperf-0.4.9.tar.gz
+
+rds-tools:
+http://www.openfabrics.org/downloads/rds-tools/rds-tools-2.0.4.tar.gz
+
+srptools:
+http://www.openfabrics.org/downloads/srptools/srptools-0.0.4-0.1.gce1f64c.tar.gz
+
+
+2.2 Installed OFED Components
+-------------------------------
+The script /etc/infiniband/info provides data on the specific OFED installation
+on the machine.
+
+For example:
+
+# /etc/infiniband/info 
+prefix=/usr
+Kernel=2.6.32-220.el6.x86_64
+
+Configure options: --with-core-mod --with-user_mad-mod --with-user_access-mod --with-addr_trans-mod --with-mthca-mod --with-mlx4-mod --with-mlx4_en-mod --with-cxgb3-mod --with-cxgb4-mod --with-nes-mod --with-qib-mod --with-ipoib-mod --with-srp-mod
+
+2.3 Building/Installing InfiniBand (IB) Modules With Debug Information
+----------------------------------------------------------------------
+To compile/build/install the IB modules so that they will contain debug
+information, set OPENIB_KERNEL_EXTRA_CFLAGS="-g" in your environment
+before running OFED's install.pl/build.sh .
+
+
+===============================================================================
+3. Pinning (Locking) User Memory Pages
+===============================================================================
+
+Memory locking is managed by the kernel on a per user basis. Regular users (as
+opposed to root) have a limited number of pages which they may pin, where
+the limit is pre-set by the administrator. Registering memory for IB verbs
+requires pinning memory, thus an application cannot register more memory than
+it is allowed to pin.
+
+The user can change the system per-process memory lock limit by adding
+the following two lines to the file /etc/security/limits.conf:
+
+  *  soft  memlock  <number>
+  *  hard  memlock  <number>
+
+  where <number> denotes the number of KBytes that may be locked by a
+  user process.
+
+The above change to /etc/security/limits.conf will allow any user process in the
+system to lock up to <number> KBytes of memory.
+
+On some systems, it may be possible to use "unlimited" for the size to disable
+these limits entirely.
+	      
+Note: The file /etc/security/limits.conf contains further documentation.
+
+
+===============================================================================
+4. External Module Compilation Over OFED-3.5
+===============================================================================
+
+To build kernel modules depending on OFED's modules, take the Modules.symvers
+file from <prefix>/src/ofa_kernel/Module.symvers (part of the kernel-ib-devel RPM)
+and copy it to the modules subdir and then compile your module.
+
+If <prefix>/src/ofa_kernel/Module.symvers does not exist or it is empty, use the
+create_Module.symvers.sh (a part of the ofed-docs RPM) script to create the
+Module.symvers file.
+Example:
+MODULES_DIR=/lib/modules/`uname -r`/updates ./create_Module.symvers.sh
+
+See "Module versioning & Module.symvers" in the modules.txt from kernel
+documentation (e.g. linux-2.6.30/Documentation/kbuild/modules.txt).
+
+===============================================================================
+5. Adding vendor specific actions to the installation of OFED
+===============================================================================
+
+Vendors that want to add actions to the install/uninstall process of OFED can
+bind external scripts to hooks in install.pl and ofed_uninstall.sh.
+
+5.1  Specifying vendor scripts and configuration parameters
+-----------------------------------------------------------
+This option is only available when installing ofed in non interactive mode.
+Edit the OFED configuration file (ofed.conf ) and add the lines below (you don't have to use all of them).
+
+# Script to run before install process starts
+vendor_pre_install=my_pre_install.sh
+# Script to run after install process finishes
+vendor_post_install=my_post_install.sh
+# Script to run before uninstall process starts
+vendor_pre_uninstall=my_pre_uninstall.sh
+# Script to run after uninstall process finishes
+vendor_post_uninstall=my_post_uninstall.sh
+
+You can also also add vendor specific configuration parameters. Lines that start
+with vendor_config_ will not be parsed by install.pl and can be parsed by one
+of the vendor scripts
+
+vendor_config_something=value_for_that_something
+
+Running ./install.pl -c ofed.conf in the OFED directory will now invoke the
+relevant vendor specific actions.
+
+5.2. Requirements from vendor scripts
+-------------------------------------
+The script files that are given to install.pl in ofed.conf should
+	- be located in the root directory of OFED
+	- return zero on success
+
+If vendor script fails it fails the entire installation.
+
+5.3 Skeleton for pre/post install vendor script
+-----------------------------------------------
+install.pl passes some useful installation variables to the vendor pre/post
+install scripts environment. See the example below for a typical usage.
+
+#!/bin/bash
+
+eval $*
+
+# The following env. parameters are set at this point
+# 
+# CONFIG: full path filename of the OFED configuration file
+# RPMS: directory of binary RPMs
+# SRPMS: directory of source RPMS
+# PREFIX: prefix of installation
+# TOPDIR: root of OFED package
+# QUIET: quiet operation indicator
+
+function readconf() {
+        local config=$1
+        while read line; do
+            # skip comments
+            [[ ${line:0:1} == "#" ]] && continue
+
+            # skip empty lines
+            [[ -z "$line" ]] && continue
+
+            # parse line
+            token=$(echo $line|cut -f1 -d=)
+            value=$(echo $line|cut -f2 -d=)
+
+        done < "$config"
+}
+
+readconf $CONFIG
+
+exit 0
+
+===============================================================================
+6. How to compile OFED sources manually
+===============================================================================
+
+These are the instructions how to compile and install kernel and user parts "manually" 
+meaning without building the RPMs and without using the install.pl script.
+
+6.1 Compiling the kernel modules
+--------------------------------
+1. tar xzf OFED-3.5.tgz
+2. rpm -ihv OFED-3.5/SRPMS/compat-rdma-3.5-OFED.3.5.src.rpm
+3. cd /usr/src/redhat/SOURCES
+4. tar xzvf compat-rdma-3.5.tgz
+5. cd compat-rdma-3.5
+6. configure: 
+   run ./configure --help for a list of options.
+   basic invocation is:
+   ./configure --with-core-mod --with-user_mad-mod --with-user_access-mod --with-addr_trans-mod --with-mlx4-mod --with-mlx4_en-mod --with-cxgb3-mod --with-cxgb4-mod --with-nes-mod --with-qib-mod --with-ipoib-mod --with-srp-mod
+7. make
+   make install
+     
+NOTES: 
+  1. The modules select for install are written to configure.mk.kernel
+  2. INSTALL_MOD_DIR = "extra/ofa_kernel" for RedHat base Distros 
+     INSTALL_MOD_DIR = "updates" for other Distros 
+
+6.2 Compiling the user space libraries
+--------------------------------------
+To install user space library from the source RPM provided by OFED-1.5.1 manually,
+do the following:
+
+Example for libibverbs:
+ 
+1. tar xzf OFED-3.5.tgz
+2. rpm -ihv SRPMS/libibverbs-1.1.6-1.src.rpm
+3. cd /usr/src/redhat/SOURCES (for RedHat)
+   or
+   cd /usr/src/packages/SOURCES (for SuSE)
+4. tar xzf libibverbs-1.1.6.tgz
+5. cd libibverbs-1.1.6
+6. ./configure (specify parameters, if required)
+7. make
+8. make install
+ 
+ 
