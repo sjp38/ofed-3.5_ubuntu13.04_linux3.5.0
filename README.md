@@ -8,7 +8,8 @@ environment - Ubuntu 13.04 with 3.5 kernel.
 # Install command
 To install, run next commands.
 ```
-$ sudo apt-get install rpm zlib1g-dev libstdc++6-4.7-dev g++ byacc libtool bison flex tk-lib tk8.5 tk8.5-dev
+$ sudo apt-get install rpm zlib1g-dev libstdc++6-4.7-dev g++ byacc \
+        libtool bison flex tk-lib tk8.5 tk8.5-dev
 $ sudo mv /bin/sh /bin/sh.bak
 $ sudo ln -s /bin/bash /bin/sh
 $ sudo ln -s /usr/lib/tcl8.5/tclConfig.sh /usr/share/tcltk/tcl8.5/tclConfig.sh
